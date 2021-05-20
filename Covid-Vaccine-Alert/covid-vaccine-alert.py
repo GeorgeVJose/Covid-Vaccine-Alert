@@ -21,7 +21,7 @@ def get_tommorow_date():
 
 
 def display_table(df):
-    print(tabulate(df, headers='keys', tablefmt='psql'))
+    print(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
 
 
 header = {
@@ -30,7 +30,7 @@ header = {
 
 date = get_tommorow_date()
 
-
+print("Tamil Nadu")
 tamilnadu_district_data = {
     'District Name': ['Aranthangi', 'Ariyalur', 'Attur', 'Chengalpet', 'Chennai', 'Cheyyar', 'Coimbatore', 'Cuddalore', 'Dharmapuri', 'Dindigul', 'Erode', 'Kallakurichi', 'Kanchipuram', 'Kanyakumari', 'Karur', 'Kovilpatti', 'Krishnagiri', 'Madurai', 'Nagapattinam', 'Namakkal', 'Nilgiris', 'Palani', 'Paramakudi', 'Perambalur', 'Poonamallee', 'Pudukkottai', 'Ramanathapuram', 'Ranipet', 'Salem', 'Sivaganga', 'Sivakasi',
                       'Tenkasi', 'Thanjavur', 'Theni', 'Thoothukudi (Tuticorin)', 'Tiruchirappalli', 'Tirunelveli', 'Tirupattur', 'Tiruppur', 'Tiruvallur', 'Tiruvannamalai', 'Tiruvarur', 'Vellore', 'Viluppuram', 'Virudhunagar'],
@@ -38,6 +38,7 @@ tamilnadu_district_data = {
 }
 display_table(tamilnadu_district_data)
 
+print("\nKerala")
 kerala_district_data = {
     "District Name": ["Alappuzha", 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam', 'Kozhikode', 'Malappuram', 'Palakkad', 'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'],
     "District ID": [301, 307, 306, 297, 295, 298, 304, 305, 302, 308, 300, 296, 303, 299, ]
@@ -45,8 +46,8 @@ kerala_district_data = {
 display_table(kerala_district_data)
 
 district_ids = [x for x in input(
-    "Enter District IDs (with space separated): ").split()]
-min_dose = int(input("Enter minimum dose: "))
+    "Enter District IDs (space separated): ").split()]
+min_dose = int(input("Enter minimum dose for alert: "))
 wait_time = int(input("Enter wait time (minutes): "))
 
 while True:
@@ -61,14 +62,23 @@ while True:
                     for session in center["sessions"]:
                         hospital_data.append(
                             [
-                                center['center_id'],
+                                # center['center_id'],``
                                 center['name'],
                                 center['address'],
                                 center['district_name'],
                                 session['available_capacity_dose1'],
                                 session['available_capacity_dose2'],
                                 session['min_age_limit'],
-                                session['date']
+                                session['date'],
+                                session['vaccine'],
+                                next(
+                                    x['fee'] for x in center['vaccine_fees'] if x['vaccine'] == session['vaccine']
+                                )
+                                if (
+                                    center['fee_type'] == 'Paid' and
+                                    'vaccine_fees' in center.keys()
+                                )
+                                else center['fee_type']
                             ]
                         )
             # print(res_json)
@@ -79,17 +89,16 @@ while True:
 
     df_hospital = pd.DataFrame(
         hospital_data,
-        columns=["Center ID", "Name", "Address", "District",
-                 "Dose 1 Capacity", "Dose 2 Capacity", "Age limit", "Date"]
+        columns=["Name", "Address", "District",
+                 "Dose 1 Capacity", "Dose 2 Capacity", "Age limit", "Date", "Vaccine", "Fee"]
     )
-
 
     display_table(df_hospital.sort_values(
         by=['Dose 1 Capacity', 'Dose 2 Capacity'], ascending=False))
 
     if (
-        (df_hospital["Dose 1 Capacity"] > min_dose) |
-        (df_hospital["Dose 2 Capacity"] > min_dose)
+        (
+            df_hospital["Dose 1 Capacity"] > min_dose) | (df_hospital["Dose 2 Capacity"] > min_dose)
     ).any():
         start_alert()
 
